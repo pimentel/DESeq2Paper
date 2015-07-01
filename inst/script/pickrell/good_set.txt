@@ -1,0 +1,26 @@
+"run" "experiment" "hapmap_id" "id" "family.pedID" "individual.pedID" "father.pedID" "mother.pedID" "sex" "individual.LSID" "sample.LSID" "submission" "study" "sample" "readlength"
+"9" "SRR031825" "SRX014545" "NA19239" "NA19239_argonne" 117 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR117.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19239:1" "SRA010249" "SRP001540" "SRS008838" 46
+"10" "SRR031826" "SRX014546" "NA19098" "NA19098_argonne" 105 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR105.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19098:1" "SRA010249" "SRP001540" "SRS008839" 46
+"11" "SRR031827" "SRX014547" "NA19144" "NA19144_argonne" 74 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR074.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19144:1" "SRA010249" "SRP001540" "SRS008840" 46
+"13" "SRR031829" "SRX014549" "NA19210" "NA19210_argonne" 50 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR050.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19210:1" "SRA010249" "SRP001540" "SRS008842" 46
+"14" "SRR031830" "SRX014550" "NA19153" "NA19153_argonne" 72 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR072.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19153:1" "SRA010249" "SRP001540" "SRS008843" 46
+"55" "SRR031887" "SRX014607" "NA19192" "NA19192_argonne" 112 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR112.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19192:1" "SRA010249" "SRP001540" "SRS008900" 46
+"57" "SRR031890" "SRX014610" "NA18862" "NA18862_argonne" 24 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR024.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18862:1" "SRA010249" "SRP001540" "SRS008903" 46
+"58" "SRR031891" "SRX014611" "NA18853" "NA18853_argonne" 18 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR018.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18853:1" "SRA010249" "SRP001540" "SRS008904" 46
+"59" "SRR031892" "SRX014612" "NA18913" "NA18913_argonne" 28 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR028.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18913:1" "SRA010249" "SRP001540" "SRS008905" 46
+"71" "SRR031905" "SRX014625" "NA19138" "NA19138_argonne" 43 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR043.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19138:1" "SRA010249" "SRP001540" "SRS008918" 46
+"74" "SRR031910" "SRX014630" "NA19160" "NA19160_argonne" 56 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR056.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19160:1" "SRA010249" "SRP001540" "SRS008923" 46
+"75" "SRR031911" "SRX014631" "NA18507" "NA18507_argonne" 9 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR009.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18507:1" "SRA010249" "SRP001540" "SRS008924" 46
+"82" "SRR031921" "SRX014641" "NA19101" "NA19101_argonne" 42 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR042.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19101:1" "SRA010249" "SRP001540" "SRS008934" 46
+"83" "SRR031922" "SRX014642" "NA19128" "NA19128_argonne" 77 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR077.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19128:1" "SRA010249" "SRP001540" "SRS008935" 46
+"84" "SRR031923" "SRX014643" "NA19130" "NA19130_argonne" 101 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR101.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19130:1" "SRA010249" "SRP001540" "SRS008936" 46
+"85" "SRR031924" "SRX014644" "NA19203" "NA19203_argonne" 48 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR048.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19203:1" "SRA010249" "SRP001540" "SRS008937" 46
+"89" "SRR031928" "SRX014648" "NA18504" "NA18504_argonne" 5 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR005.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18504:1" "SRA010249" "SRP001540" "SRS008941" 46
+"90" "SRR031929" "SRX014649" "NA18516" "NA18516_argonne" 13 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR013.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18516:1" "SRA010249" "SRP001540" "SRS008942" 46
+"91" "SRR031930" "SRX014650" "NA18522" "NA18522_argonne" 16 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR016.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18522:1" "SRA010249" "SRP001540" "SRS008943" 46
+"95" "SRR031935" "SRX014655" "NA18871" "NA18871_argonne" 17 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR017.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18871:1" "SRA010249" "SRP001540" "SRS008948" 46
+"123" "SRR031965" "SRX014685" "NA18501" "NA18501_argonne" 4 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR004.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18501:1" "SRA010249" "SRP001540" "SRS008978" 46
+"124" "SRR031966" "SRX014686" "NA18856" "NA18856_argonne" 23 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR023.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA18856:1" "SRA010249" "SRP001540" "SRS008979" 46
+"127" "SRR031969" "SRX014689" "NA19119" "NA19119_argonne" 60 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR060.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19119:1" "SRA010249" "SRP001540" "SRS008982" 46
+"128" "SRR031970" "SRX014690" "NA19171" "NA19171_argonne" 47 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR047.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19171:1" "SRA010249" "SRP001540" "SRS008983" 46
+"129" "SRR031971" "SRX014691" "NA19200" "NA19200_argonne" 45 3 0 0 1 "urn:LSID:dcc.hapmap.org:Individual:YOR045.03:1" "urn:LSID:dcc.hapmap.org:Sample:NA19200:1" "SRA010249" "SRP001540" "SRS008984" 46

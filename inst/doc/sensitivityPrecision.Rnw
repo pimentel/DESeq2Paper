@@ -1,0 +1,417 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{sensitivityPrecision}
+
+\documentclass{article}
+\usepackage[margin=2cm]{geometry}
+\title{Sensitivity and precision using the Bottomly et al. dataset}
+\author{Michael Love}
+\begin{document}
+\maketitle
+
+\section{Load the benchmarking results}
+
+We load the benchmarking results, which were produced by the script
+\texttt{/inst/script/bottomlyDiffExpr.R}.
+The \textit{SummarizedExperiment} object used for this analysis is
+contained in \texttt{/data/bottomly\_sumexp.RData}.
+
+<<loadData>>=
+library("DESeq2paper")
+data("sensitivityPrecision")
+@ 
+
+The evaluation set results are contained in the \texttt{resTest} object 
+and the verification set results are contained in the \texttt{resHeldout} object,
+each a list, one element for each random replicate, of data frames which contain
+a column for each algorithm giving the adjusted $p$-values for each gene. 
+For $p$-value adjustment, the \textit{p.adjust} function was used with 
+\texttt{method="BH"} (Benjamini-Hochberg correction), 
+over only those genes with non-zero row sum.
+
+<<functions>>=
+library("ggplot2")
+library("reshape")
+getHeldoutCalls <- function(alpha) {
+    t(sapply(1:nreps, function(i) sapply(namesAlgos, function(algo) {
+    sum((resHeldout[[i]][[algo]] < alpha))
+  })))
+}
+getTestCalls <- function(alpha) {
+    t(sapply(1:nreps, function(i) sapply(namesAlgos, function(algo) {
+    sum((resTest[[i]][[algo]] < alpha))
+  })))
+}
+
+getSensitivityAlgoGold <- function(alpha, alphaOut, gold) {
+  t(sapply(1:nreps, function(i) sapply(namesAlgos, function(algo) {
+    sigHeldout <- resHeldout[[i]][[gold]] < alphaOut
+    mean((resTest[[i]][[algo]] < alpha)[sigHeldout])
+  })))
+}
+
+getPrecisionAlgoGold <- function(alpha, alphaOut, gold) {
+  t(sapply(1:nreps, function(i) sapply(namesAlgos, function(algo) {
+    sigTest <- resTest[[i]][[algo]] < alpha
+    if (sum(sigTest) == 0) return(0)
+    mean((resHeldout[[i]][[gold]] < alphaOut)[sigTest])
+  })))
+}
+@ 
+
+The following function helps to rename algorithms. 
+
+<<renameAtoB>>=
+renameAtoB <- function(f,a,b) {
+  levels(f)[levels(f) == a] <- b
+  f
+}
+@ 
+
+<<namesAlgos>>=
+namesAlgos <- make.names(namesAlgos)
+names(namesAlgos) <- namesAlgos
+@ 
+
+\clearpage
+
+\section{Counting number of calls}
+
+Here we produce boxplots of the number of calls based on adjusted $p$-value
+for each algorithm in the evaluation set and verification set for each random replicate.
+
+<<countCalls>>=
+nreps <- length(resTest)
+heldMat <- getHeldoutCalls(.1)
+testMat <- getTestCalls(.1)
+d <- data.frame(heldoutCalls=as.vector(heldMat),
+                testCalls=as.vector(testMat),
+                algorithm=factor(rep(namesAlgos,each=nrow(heldMat)),
+                levels=namesAlgos))
+d$algorithm <- renameAtoB(d$algorithm, "DESeq", "DESeq (old)")
+d$algorithm <- renameAtoB(d$algorithm, "cuffdiff2", "Cuffdiff 2")
+d$algorithm <- renameAtoB(d$algorithm, "edgeR.robust", "edgeR-robust")
+@
+
+<<testCalls, dev="pdf", fig.align="center", fig.width=4.5, fig.height=3, fig.cap="Evaluation set calls (adjusted $p$-value $< .1$)">>=
+p <- ggplot(d, aes(x=reorder(algorithm,testCalls,median),y=testCalls,color=algorithm))
+p + geom_boxplot(outlier.colour=rgb(0,0,0,0)) + theme_bw() +
+    geom_point(position = position_jitter(w = 0.1, h = 0), color="grey50", size=1) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab("") +
+    scale_colour_discrete(guide="none")  + ylab("number of DE calls")
+@ 
+
+<<heldoutCalls, dev="pdf", fig.align="center", fig.width=4.5, fig.height=3, fig.cap="Verification set calls (adjusted $p$-value $< .1$)">>=
+p <- ggplot(d, aes(x=reorder(algorithm,heldoutCalls,median),y=heldoutCalls,color=algorithm))
+p + geom_boxplot(outlier.colour=rgb(0,0,0,0)) + theme_bw() +
+    geom_point(position = position_jitter(w = 0.1, h = 0), color="grey50", size=1) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab("") +
+    scale_colour_discrete(guide="none")  + ylab("number of DE calls")
+@ 
+
+\clearpage
+
+\section{Sensitivity and precision plots}
+
+We construct a data frame containing the sensitivity and
+precision estimates for every pair of algorithm in the 
+evaluation set and the verification set.
+
+<<constructGrid>>=
+nreps <- length(resTest)
+sensMat <- do.call(rbind,lapply(namesAlgos, function(algo) {
+    res <- getSensitivityAlgoGold(.1,.1,algo)
+    data.frame(res,heldout=rep(algo,nrow(res)))
+}))
+sensMelt <- melt(sensMat, id="heldout")
+names(sensMelt) <- c("heldout","test","sensitivity")
+names(sensMelt) <- c("verification","evaluation","sensitivity")
+
+precMat <- do.call(rbind,lapply(namesAlgos, function(algo) {
+    res <- getPrecisionAlgoGold(.1,.1,algo)
+    data.frame(res,heldout=rep(algo,nrow(res)))
+}))
+precMelt <- melt(precMat, id="heldout")
+names(precMelt) <- c("heldout","test","precision")
+names(precMelt) <- c("verification","evaluation","precision")
+
+d <- data.frame(sensMelt, precision=precMelt$precision)
+d$evaluation <- factor(d$evaluation, levels=namesAlgos)
+d$verification <- factor(d$verification, levels=namesAlgos)
+@ 
+
+<<renameSensResults>>=
+d$evaluation <- renameAtoB(d$evaluation, "DESeq", "DESeq (old)")
+d$verification <- renameAtoB(d$verification, "DESeq", "DESeq (old)")
+d$evaluation <- renameAtoB(d$evaluation, "cuffdiff2", "Cuffdiff 2")
+d$verification <- renameAtoB(d$verification, "cuffdiff2", "Cuffdiff 2")
+d$evaluation <- renameAtoB(d$evaluation, "edgeR.robust", "edgeR-robust")
+d$verification <- renameAtoB(d$verification, "edgeR.robust", "edgeR-robust")
+
+@ 
+
+<<sensitivityGrid, dev="pdf", fig.width=8, fig.height=6, fig.cap="Sensitivity, where each algorithm's calls (adjusted $p$-value $< .1$) in the evaluation set (color boxes) is compared against another algorithm's calls (adjusted $p$-value $< .1$) in the verification set (grey labels).">>=
+p <- ggplot(d, aes(x=evaluation,y=sensitivity,color=evaluation))
+p + geom_boxplot(outlier.colour=rgb(0,0,0,0)) + theme_bw() + facet_wrap(~ verification) + 
+  geom_point(position = position_jitter(w = 0.1, h = 0), color="grey50", size=1) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("")
+
+@
+
+<<precisionGrid, dev="pdf", fig.width=8, fig.height=6, fig.cap="Precision, where each algorithm's calls (adjusted $p$-value $< .1$) in the evaluation set (color boxes) is compared against another algorithm's calls (adjusted $p$-value $< .1$) in the verification set (grey labels).">>=
+p <- ggplot(d, aes(x=evaluation,y=precision,color=evaluation))
+p + geom_boxplot(outlier.colour=rgb(0,0,0,0)) + theme_bw() + facet_wrap(~ verification) +
+    geom_point(position = position_jitter(w = 0.1, h = 0), color="grey50", size=1) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  xlab("")
+
+@
+
+\clearpage
+
+\section{Compare sensitivity at a given precision}
+
+In this section, we examine the false discovery rate (1 - precision)
+for a given range of $\alpha$, the adjusted $p$-value cutoff for
+calling a gene significant in the evaluation set. We then plot this
+curve for all algorithms performance in the evalulation set, and using
+each algorithm for determining the ``true'' calls in the verification set.
+We also use these curves to make a plot of sensitivities for each
+algorithm, using that $\alpha$ adjusted $p$-value threshold such that
+the precision is 0.9 (hence and the false discovery rate is the desired 0.1).
+
+<<fdrAtAlphaCalc, cache=TRUE>>=
+nreps <- length(resTest)
+alphas <- exp(seq(from=log(.001), to=log(.2), length=100))
+alphaOut <- .1
+fdrAtAlpha <- do.call(rbind, lapply(namesAlgos, function(algo) {
+  sigTestList <- lapply(1:nreps, function(i) lapply(alphas, function(alpha) which(resTest[[i]][[algo]] < alpha)))
+  callsTest <- sapply(1:nreps, function(i) {
+    sapply(seq_along(alphas), function(j) {
+      length(sigTestList[[i]][[j]])
+    })
+  }) 
+  do.call(rbind, lapply(namesAlgos, function(algoOut) {
+    fdr <- sapply(1:nreps, function(i) {
+      sigHeldout <- resHeldout[[i]][[algoOut]] < alphaOut  
+      sapply(seq_along(alphas), function(j) {
+        ifelse(sum(sigTestList[[i]][[j]]) > 0, mean(!sigHeldout[sigTestList[[i]][[j]]]), 0)
+      })
+    })
+    data.frame(alpha=alphas, FDR=apply(fdr, 1, median), callsTest=apply(callsTest, 1, median), algorithm=rep(algo, 100), verification=rep(algoOut, 100))
+  }))
+}))
+
+@ 
+
+
+<<renameFDRResults>>=
+fdrAtAlphaPlot <- fdrAtAlpha
+fdrAtAlphaPlot$algorithm <- renameAtoB(fdrAtAlphaPlot$algorithm, "DESeq", "DESeq (old)")
+fdrAtAlphaPlot$verification <- renameAtoB(fdrAtAlphaPlot$verification, "DESeq", "DESeq (old)")
+fdrAtAlphaPlot$algorithm <- renameAtoB(fdrAtAlphaPlot$algorithm, "cuffdiff2", "Cuffdiff 2")
+fdrAtAlphaPlot$verification <- renameAtoB(fdrAtAlphaPlot$verification, "cuffdiff2", "Cuffdiff 2")
+fdrAtAlphaPlot$algorithm <- renameAtoB(fdrAtAlphaPlot$algorithm, "edgeR.robust", "edgeR-robust")
+fdrAtAlphaPlot$verification <- renameAtoB(fdrAtAlphaPlot$verification, "edgeR.robust", "edgeR-robust")
+
+@ 
+
+<<fdrAtAlpha, fig.align="center", fig.cap="Actual versus nominal false discovery rate for the Bottomly et al. dataset. The actual false discovery rate was calculated using the median of (1 - precision) as in the previous precision plots, though here varying the adjusted p-value cutoff, i.e., the nominal FDR, for the evaluation set. A false positive was defined as a call in the evaluation set for a given critical value of adjusted p-value which did not have adjusted p-value less than 0.1 in the verification set.  Ideally, curves should fall on the identity line (indicated by a black line); curves that fall above indicate that an algorithm is too permissive (anti-conservative), curves falling below indicate that an algorithm does not use its type-I error budget, i.e., is conservative. DESeq2 had a false discovery rate nearly matching the nominal false discovery rate (black diagonal line) for the majority of algorithms used to determine the verification set calls. The old DESeq tool was often too conservative.">>=
+# only show results when the evaluation algorithm has positive median calls
+p <- ggplot(fdrAtAlphaPlot[fdrAtAlphaPlot$callsTest > 0,], aes(x=alpha, y=FDR, color=algorithm))
+p + geom_line() + theme_bw() + geom_abline(intercept=0,slope=1) +
+  facet_wrap(~ verification) + ylab("FDR (1 - precision)") + 
+  xlab("evaluation set adjusted p-value cutoff") + 
+  scale_x_continuous(breaks=c(0,.05,.1,.15)) + 
+  scale_y_continuous(breaks=c(0,.05,.1,.15,.2,.25)) + 
+  coord_cartesian(ylim=c(-.01,.3), xlim=c(-.01,.2))
+
+@
+
+<<sensAtTargetCalc, cache=TRUE>>=
+alphaTarget <- .1
+alphaOut <- .1
+sensAtTarget <- do.call(rbind, lapply(namesAlgos, function(algoOut) {
+  do.call(rbind, lapply(namesAlgos, function(algo) {
+    sens <- sapply(1:nreps, function(i) {
+      sigHeldout <- resHeldout[[i]][[algoOut]] < alphaOut
+      idx <- fdrAtAlpha$algorithm == algo & fdrAtAlpha$verification == algoOut
+      lessTarget <- which(fdrAtAlpha$FDR[idx] < alphaTarget)
+      if ( length(lessTarget) == 0 ) return(0)
+      alpha <- alphas[ lessTarget[length(lessTarget)] ]
+      sigTest <- resTest[[i]][[algo]] < alpha
+      ifelse(sum(sigHeldout) > 0, mean(sigTest[sigHeldout]), 0) 
+    })  
+    data.frame(sensitivity=sens, algorithm=rep(algo, nreps), verification=rep(algoOut, nreps))
+  }))
+}))
+
+@
+
+<<renameSensAtTargetResults>>=
+sensAtTarget$algorithm <- renameAtoB(sensAtTarget$algorithm, "DESeq", "DESeq (old)")
+sensAtTarget$verification <- renameAtoB(sensAtTarget$verification, "DESeq", "DESeq (old)")
+sensAtTarget$algorithm <- renameAtoB(sensAtTarget$algorithm, "cuffdiff2", "Cuffdiff 2")
+sensAtTarget$verification <- renameAtoB(sensAtTarget$verification, "cuffdiff2", "Cuffdiff 2")
+sensAtTarget$algorithm <- renameAtoB(sensAtTarget$algorithm, "edgeR.robust", "edgeR-robust")
+sensAtTarget$verification <- renameAtoB(sensAtTarget$verification, "edgeR.robust", "edgeR-robust")
+
+@ 
+
+<<sensAtTarget, fig.width=8, fig.height=6, fig.align="center",fig.cap="Sensitivity of algorithms evaluated while controlling the median precision. While it was generally noted that sensitivity and precision were negatively correlated, here this effect was controlled by setting the adjusted p-value cutoff for the evaluation set calls such that the median precision of all algorithms would be 0.9 (actual false discovery rate of 0.1). This amounted to finding the point on the x-axis in the previous figure, where the curve crosses 0.1 on the y-axis. For most algorithms, this meant setting an adjusted p-value cutoff below 0.1. DESeq2 often had the highest median sensitivity for a given target precision, though the variability across random replicates was generally larger than the difference between algorithms.">>=
+
+p <- ggplot(sensAtTarget, aes(x=algorithm, y=sensitivity, color=algorithm))
+p + geom_boxplot(outlier.colour=rgb(0,0,0,0)) + theme_bw() + facet_wrap(~ verification) +
+  geom_point(position = position_jitter(w = 0.1, h = 0), color="grey50", size=1) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab("")
+
+@ 
+
+\clearpage
+
+\section{Clustering of calls}
+
+<<clustSetup>>=
+alpha <- .1
+library("abind")
+# first with evaluation sets
+j0 <- lapply(1:nreps, function(i) as.matrix(dist(t(resTest[[i]] < alpha),method="binary")))
+j <- abind(j0,along=3)
+average.Jaccard <- apply(j,c(1,2),mean)
+average.Jaccard <- as.dist(average.Jaccard)
+hcTest <- hclust(average.Jaccard)
+
+# again with verification sets
+j0 <- lapply(1:nreps, function(i) as.matrix(dist(t(resHeldout[[i]] < alpha),method="binary")))
+j <- abind(j0,along=3)
+average.Jaccard <- apply(j,c(1,2),mean)
+average.Jaccard <- as.dist(average.Jaccard)
+hcHeldout <- hclust(average.Jaccard)
+@
+
+<<clustMethods, dev="pdf", fig.align="center", fig.width=8, fig.height=4, fig.cap="Clustering of calls (adjusted $p$-value $< .1$) with distances based on the Jaccard index">>=
+par(mfrow=c(1,2))
+plot(hcTest,main="Cluster Dendrogram: evaluation")
+plot(hcHeldout,main="Cluster Dendrogram: verification")
+@
+
+\clearpage
+
+\section{Heatmap of calls for a single random replicate}
+
+<<oneExampleTest>>=
+alpha <- 0.1
+library("gplots")
+# which replicate had median number of calls
+median(colMeans(sapply(1:30, function(i) colSums(resTest[[i]] < alpha))))
+colMeans(sapply(1:30, function(i) colSums(resTest[[i]] < alpha)))
+i <- 23
+nMat <- resTest[[i]] < alpha
+colnames(nMat)[colnames(nMat) == "DESeq"] <- "DESeq (old)"
+colnames(nMat)[colnames(nMat) == "cuffdiff2"] <- "Cuffdiff 2"
+colnames(nMat)[colnames(nMat) == "edgeR.robust"] <- "edgeR-robust"
+nMat <- nMat[rowSums(nMat) > 0,]
+mode(nMat) <- "numeric"
+hc <- hclust(dist(t(nMat),method="binary"))
+y <- sweep(nMat,2,2^(ncol(nMat)-order(hc$order)),"*")
+z <- nMat[order(-rowSums(y)),]
+@ 
+
+<<heatmapTest, dev="png", fig.align="center", fig.width=10, fig.height=15, out.width="5in", out.height="7.5in", fig.cap="Example of evaluation set calls (adjusted $p$-value $< .1$) for a single replicate of the random sampling">>=
+heatmap.2(z,main=paste(nrow(nMat),"out of",nrow(resTest[[1]]),"genes"),
+          trace="none", key=FALSE,
+          Rowv=FALSE,labRow=FALSE,
+          Colv=as.dendrogram(hc),
+          dendrogram="column",
+          scale="none",col=c("grey","red"),
+          mar=c(15,5),
+          lwid=c(2,10),
+          cexCol=2.5)
+@
+
+<<oneExampleHeldout>>=
+nMat <- resHeldout[[i]] < alpha
+colnames(nMat)[colnames(nMat) == "DESeq"] <- "DESeq (old)"
+colnames(nMat)[colnames(nMat) == "cuffdiff2"] <- "Cuffdiff 2"
+colnames(nMat)[colnames(nMat) == "edgeR.robust"] <- "edgeR-robust"
+nMat <- nMat[rowSums(nMat) > 0,]
+mode(nMat) <- "numeric"
+hc <- hclust(dist(t(nMat),method="binary"))
+y <- sweep(nMat,2,2^(ncol(nMat)-order(hc$order)),"*")
+z <- nMat[order(-rowSums(y)),]
+@
+
+<<heatmapHeldout, dev="png", fig.align="center", fig.width=10, fig.height=15, out.width="5in", out.height="7.5in", fig.cap="Example of verification set calls (adjusted $p$-value $< .1$) for a single replicate of the random sampling">>=
+heatmap.2(z,main=paste(nrow(nMat),"out of",nrow(resTest[[1]]),"genes"),
+          trace="none", key=FALSE,
+          Rowv=FALSE,labRow=FALSE,
+          Colv=as.dendrogram(hc),
+          dendrogram="column",
+          scale="none",col=c("grey","red"),
+          mar=c(15,5),
+          lwid=c(2,10),
+          cexCol=2.5)
+@ 
+
+\clearpage
+
+\section{Logarithmic fold changes from a single random replicate}
+
+<<lfcMatrix>>=
+m <- as.matrix(lfcHeldout[[i]])
+# use DESeq2 to remove those genes with all zero counts
+m <- m[!is.na(m[,"DESeq2"]),]
+# EBSeq does not return LFC estimates
+m <- m[, -which(colnames(m) == "EBSeq")]
+colnames(m)[colnames(m) == "DESeq"] <- "DESeq (old)"
+colnames(m)[colnames(m) == "cuffdiff2"] <- "Cuffdiff 2"
+colnames(m)[colnames(m) == "edgeR.robust"] <- "edgeR-robust"
+@ 
+
+<<lfcPairs, dev="png", fig.align="center", fig.width=10, fig.height=10, dpi=100, eval=TRUE, fig.cap="Logarithmic (base 2) fold changes for a single replicate of random sampling. Bottom panels show Pearson correlations.">>=
+library("LSD")
+heatpairs(m, xlim=c(-1,1), ylim=c(-1,1), cor.cex=3, main="")
+@
+
+\clearpage
+
+\section{Sign change of logarithmic fold change}
+
+The following code is used to evaluate the number of LFC sign changes for genes called with adjusted $p$-value $< .1$ by either \emph{DESeq2} or \emph{cuffdiff2}. We count a wrong sign if one algorithm calls the gene, and the sign of the LFC for the gene is positive for one algorithm and negative for the other.
+
+In the evaluation set:
+
+<<signChangeEvaluation>>=
+alpha <- .1
+wrongSign <- sapply(1:nreps, function(i) {
+  idx <- resTest[[i]]$DESeq2 < alpha | resTest[[i]]$cuffdiff2 < alpha
+  sum(sign(lfcTest[[i]]$DESeq2[idx]) == -1 * sign(lfcTest[[i]]$cuffdiff2[idx]),na.rm=TRUE)/sum(idx)
+})
+wrongSign
+mean(wrongSign)
+@
+
+In the verification set:
+
+<<signChangeVerification>>=
+alpha <- .1
+wrongSign <- sapply(1:nreps, function(i) {
+  idx <- resHeldout[[i]]$DESeq2 < alpha | resHeldout[[i]]$cuffdiff2 < alpha
+  sum(sign(lfcHeldout[[i]]$DESeq2[idx]) == -1 * sign(lfcHeldout[[i]]$cuffdiff2[idx]),na.rm=TRUE)/sum(idx)
+})
+wrongSign
+mean(wrongSign)
+@
+
+
+\clearpage
+
+\section{Session information}
+
+<<sessInfo, echo=FALSE, results="asis">>=
+toLatex(sessionInfo())
+@ 
+
+
+
+\end{document}

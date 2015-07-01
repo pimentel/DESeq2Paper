@@ -1,0 +1,4 @@
+# alignment call
+tophat2 --no-coverage-search -p 5 -o ../tophat_out/file genome file.fastq
+
+

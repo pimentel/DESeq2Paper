@@ -1,0 +1,64 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{expVarLogDisp}
+
+\documentclass{article}
+\usepackage[margin=2cm]{geometry}
+\title{Theoretical and sample variance of logarithmic dispersion estimates}
+\author{Michael Love}
+\begin{document}
+\maketitle
+
+\section{Simulate Negative-Binomial-distributed data}
+
+The following simulates i.i.d. Negative-Binomial-distributed data, 
+then uses \emph{DESeq2} to obtain the gene-wise estimates of 
+dispersion. The simulated values have a mean of $2^10 = 1024$, 
+and true dispersion $\alpha = .05$ or $.5$.
+The variance of the finite log dispersion estimates is compared
+to the theoretical approximation discussed in the Methods section.
+A range of values for $m$ and $p$ is considered. When $p$ is equal to
+3, this involves the addition of another covariate, ``group'', in 
+addition to the standard covariate ``condition''. 
+
+<<setup>>=
+library("DESeq2")
+ms <- rep(c(6,8,16),c(2,4,4))
+ps <- rep(c(2,3,2,3),c(4,2,2,2))
+alphas <- rep(c(.05,.2), 5)
+
+set.seed(1)
+d <- data.frame()
+for (i in seq_along(ms)) {
+  m <- ms[i]
+  p <- ps[i]
+  alpha <- alphas[i]
+  theorvar <- trigamma((m-p)/2)
+  dds <- makeExampleDESeqDataSet(n=4000,m=m,interceptMean=10,
+                                 interceptSD=0,dispMeanRel=function(x) alpha)
+  colData(dds)$group <- factor(rep(c("X","Y"),times=m/2))
+  design(dds) <- if (p == 2) { ~ condition } else { ~ group + condition }
+  sizeFactors(dds) <- rep(1,ncol(dds))
+  dds <- estimateDispersionsGeneEst(dds)
+  disp <- mcols(dds)$dispGeneEst
+  # exclude the dispersions which head to -Infinity
+  samplevar <- var(log(disp[disp > 1e-7]))
+  d <- rbind(d, data.frame(m=m,p=p,alpha=alpha,theorvar=theorvar,samplevar=samplevar))
+}
+ 
+@ 
+ 
+<<out, results="asis">>=
+library("xtable")
+names(d) <- c("m","p","disp.","theor. var.","sample var.")
+print(xtable(d,digits=c(0,0,0,2,3,3)),include.rownames=FALSE)
+@ 
+
+\clearpage
+
+\section{Session information}
+
+<<sessInfo, echo=FALSE, results="asis">>=
+toLatex(sessionInfo())
+@ 
+
+\end{document}

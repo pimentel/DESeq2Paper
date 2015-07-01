@@ -1,0 +1,63 @@
+
+## ----lib-----------------------------------------------------------------
+library("DESeq2")
+library("DESeq2paper")
+
+
+## ----estimateMeanDisp, cache=TRUE----------------------------------------
+data("pickrell_sumexp")
+ddspickrell <- DESeqDataSet(pickrell, ~ 1)
+ddspickrell <- estimateSizeFactors(ddspickrell)
+ddspickrell <- estimateDispersionsGeneEst(ddspickrell)
+ddspickrell <- estimateDispersionsFit(ddspickrell)
+meanDispPairs <- mcols(ddspickrell)[which(mcols(ddspickrell)$dispGeneEst > 1e-6), c("baseMean", "dispGeneEst")]
+names(meanDispPairs) <- c("mean", "disp")
+#save(meanDispPairs, file="../data/meanDispPairs.RData")  
+
+
+## ----simulateMeanDisp, cache=TRUE----------------------------------------
+asymptDisp <- attr(dispersionFunction(ddspickrell),"coefficients")["asymptDisp"]
+asymptDisp
+# the fit gives roughly the same asymptotic dispersion
+# as the average dispersion for genes with average expression > 100
+with(mcols(ddspickrell), mean(dispGeneEst[baseMean > 100]))
+rm <- rowMeans(counts(ddspickrell, normalized=TRUE))
+dim(ddspickrell)
+m <- ncol(pickrell)
+n <- nrow(pickrell)
+nbdata <- matrix(rnbinom(n * m, mu=rm, size=1/asymptDisp), ncol=m)
+ddsSim <- DESeqDataSetFromMatrix(nbdata, DataFrame(row.names=seq_len(m)), ~1)
+ddsSim <- estimateSizeFactors(ddsSim)
+ddsSim <- estimateDispersionsGeneEst(ddsSim)
+
+
+## ----meanDispRealVsSim, dev="png", fig.width=7, fig.height=4, dpi=144,fig.align="center",fig.cap="Demonstration through simulation that the dependence of dispersions on the mean seen in the Pickrell dispersion plot is not an artifact of estimation bias. (A) The gene-wise estimates of dispersion for the 69 samples of the Pickrell et al dataset. (B) The gene-wise estimates of dispersion for a simulated Negative Binomial dataset, using a fixed dispersion of 0.16, equal to the asymptotic gene-wise dispersion estimate seen in the original dataset (A), and with the same means and the same number of genes and samples as the original dataset.  Genes with dispersion estimates below the plotting range are depicted at the bottom of the frame. For genes with mean counts greater than around 5, the gene-wise dispersion estimates do not exhibit a dependence on the mean count for the simulated data in panel B. Vertical lines indicate the reciprocal of dispersion on the scale of the samples with size factors in the 1st, 2nd and 3rd quartile."----
+par(mfrow=c(1,2))
+line <- 0.4
+adj <- -.2
+cex <- 1.5
+with(mcols(ddspickrell), 
+     plot(baseMean, dispGeneEst, cex=.1, log="xy", col=rgb(0,0,0,.2),
+          ylim=c(.01,10), xlim=c(.1,1e5), xaxt="n",
+          xlab="mean of normalized counts",ylab="genewise dispersion estimate"))
+axis(1, at=c(1,1e2,1e4))
+with(mcols(ddspickrell)[which(mcols(ddspickrell)$dispGeneEst < .01),], 
+     points(baseMean, rep(.01, length(baseMean)), cex=.1, col=rgb(0,0,0,.2)))
+abline(v=1/(asymptDisp * quantile(sizeFactors(ddspickrell),1:3/4)))
+mtext("A",side=3,line=line,adj=adj,cex=cex)
+with(mcols(ddsSim), 
+     plot(baseMean, dispGeneEst, cex=.1, log="xy", col=rgb(0,0,0,.2),
+          ylim=c(.01,10), xlim=c(.1,1e5), xaxt="n",
+          xlab="mean of normalized counts",ylab="genewise dispersion estimate"))
+axis(1, at=c(1,1e2,1e4))
+with(mcols(ddsSim)[which(mcols(ddsSim)$dispGeneEst < .01),], 
+     points(baseMean, rep(.01, length(baseMean)), cex=.1, col=rgb(0,0,0,.2)))
+abline(v=1/(asymptDisp * quantile(sizeFactors(ddsSim),1:3/4)))
+mtext("B",side=3,line=line,adj=adj,cex=cex)
+
+
+
+## ----sessInfo, echo=FALSE, results="asis"--------------------------------
+toLatex(sessionInfo())
+
+

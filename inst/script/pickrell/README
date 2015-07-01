@@ -1,0 +1,9 @@
+Explanation of files in /inst/script/pickrell:
+
+calls              : the tophat2 alignment call for the fastq files from SRA
+countReads.R       : counts the reads for the count-based methods
+diffExpr.R         : runs the count-based methods and reads in cuffdiff2 results
+getPheno.R         : reads the phenotypic information from SRA and creates random subsets
+good_set.txt       : lists the set which was samples from: unrelated males with 46 bp reads
+random_calls.txt   : the cuffdiff2 calls
+random_subsets.txt : the list of samples for each random replicate (5 vs 5)

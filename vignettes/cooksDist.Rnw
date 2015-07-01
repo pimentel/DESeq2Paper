@@ -1,0 +1,120 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{cooksDist}
+
+\documentclass{article}
+\usepackage[margin=2cm]{geometry}
+\title{Count outlier detection using Cook's distance}
+\author{Michael Love}
+\begin{document}
+\maketitle
+
+\section{Run DE analysis with and without outlier removal}
+
+The following vignette produces the Supplemental Figure of the effect
+of replacing outliers based on Cook's distance. First, we load the 
+Bottomly \textit{et al.} dataset, and subset the dataset to allow 
+a 7 vs 7 sample comparison based on strain. Because we have 7 replicates 
+per condition, the \textit{DESeq} function automatically replaces outlier
+counts and refits the GLM for these genes. The argument controlling this
+behavior is \texttt{minReplicatesForReplace} which is set by default to 7.
+
+<<lib>>=
+library("DESeq2")
+library("DESeq2paper")
+@ 
+
+<<cooksSetup, cache=TRUE>>=
+data("bottomly_sumexp")
+dds <- DESeqDataSetFromMatrix(assay(bottomly), DataFrame(colData(bottomly)), ~ strain)
+dds <- dds[,c(8:11,15:17,12:14,18:21)]
+as.data.frame(colData(dds))
+dds <- DESeq(dds)
+@ 
+
+Here we run again without outlier replacement, in order to obtain the uncorrected 
+fitted coefficients.
+
+<<cooksNoReplace, cache=TRUE>>=
+ddsNoReplace <- DESeq(dds, minReplicatesForReplace=Inf)
+@ 
+
+\section{Select the gene with highest Cook's distance}
+
+Now we pick the gene which had one of the highest Cook's distance in the 
+initial fit. The inital Cook's distances are available as a matrix
+in the \texttt{assays} slot of the \textit{DESeqDataSet}.
+
+<<cooksFiltering>>=
+names(assays(dds))
+maxCooks <- apply(assays(dds)[["cooks"]], 1, max)
+idx <- which(rownames(dds) == "ENSMUSG00000076609")
+unname(counts(dds)[idx,])
+@ 
+
+\section{Plot}
+
+The following code produces the plot. Note that the original counts
+are accessible via the \textit{counts} function, and the replacement counts are
+accessible via the \texttt{replaceCounts} slot of the assays of \texttt{dds}.
+We find the expected normalized values $q_{ij}$ by accessing the model coefficients
+in the metadata columns of the object.
+
+<<cooksDist, dev="pdf", fig.align="center", fig.width=5.5, fig.height=2, fig.cap="Demonstration using the Bottomly et al dataset, of detection of outlier counts (A) using Cook's distances (B), and refitting after outliers have been replaced by the trimmed median over all samples (C). The dotted line indicates the fitted mean on the common scale.">>= 
+makeColors <- function(y=c(-1e6,1e6)) {
+  polygon(c(-1,-1,7.5,7.5),c(y,y[2:1]),
+          col=rgb(0,1,0,.1),border=NA)
+  polygon(c(7.5,7.5,50,50),c(y,y[2:1]),
+          col=rgb(0,0,1,.1),border=NA)
+}
+line <- 0.6
+adj <- -.5
+cex <- 1
+
+par(mfrow=c(1,3),mar=c(4.3,4.3,3,1))
+out <- assays(dds)[["cooks"]][idx,] > qf(.99, 2, ncol(dds) - 2)
+plot(counts(dds,normalized=TRUE)[idx,],main="With outlier",
+     ylab="normalized counts",xlab="samples",
+     pch=as.integer(colData(dds)$strain) + 1,
+     ylim=c(0,max(counts(dds,normalized=TRUE)[idx,])),
+     col=ifelse(out,"red","black"))
+makeColors()
+q0 <- 2^(mcols(ddsNoReplace)$Intercept[idx] + mcols(ddsNoReplace)$strainC57BL.6J[idx])
+q1 <- 2^(mcols(ddsNoReplace)$Intercept[idx] + mcols(ddsNoReplace)$strainDBA.2J[idx])
+segments(1,q0,7,q0,lty=3)
+segments(8,q1,14,q1,lty=3)
+mtext("A",side=3,line=line,adj=adj,cex=cex)
+
+plot(assays(dds)[["cooks"]][idx,],
+     main="Cook's distances",
+     ylab="",xlab="samples",
+     log="y",
+     pch=as.integer(colData(dds)$strain) + 1,
+     col=ifelse(out,"red","black"))
+makeColors(y=c(1e-5,1e5))
+abline(h=qf(.99, 2, ncol(dds) - 2))
+mtext("B",side=3,line=line,adj=adj,cex=cex)
+
+plot(assays(dds)[["replaceCounts"]][idx,]/sizeFactors(dds),
+     main="Outlier replaced",
+     ylab="normalized counts",xlab="samples",
+     ylim=c(0,max(assays(dds)[["replaceCounts"]][idx,]/sizeFactors(dds))),
+     pch=as.integer(colData(dds)$strain) + 1,
+     col=ifelse(out,"red","black"))
+makeColors()
+q0 <- 2^(mcols(dds)$Intercept[idx] + mcols(dds)$strainC57BL.6J[idx])
+q1 <- 2^(mcols(dds)$Intercept[idx] + mcols(dds)$strainDBA.2J[idx])
+segments(1,q0,7,q0,lty=3)
+segments(8,q1,14,q1,lty=3)
+mtext("C",side=3,line=line,adj=adj,cex=cex)
+
+@
+
+\clearpage
+
+\section{Session information}
+
+<<sessInfo, echo=FALSE, results="asis">>=
+toLatex(sessionInfo())
+@ 
+
+\end{document}

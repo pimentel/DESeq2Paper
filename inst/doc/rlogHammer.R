@@ -1,0 +1,67 @@
+
+## ----lib-----------------------------------------------------------------
+library("DESeq2")
+library("DESeq2paper")
+library("Biobase")
+library("vsn")
+
+
+## ----setup, cache=TRUE---------------------------------------------------
+# download Hammer count matrix from ReCount project site
+# http://bowtie-bio.sourceforge.net/recount/ExpressionSets/hammer_eset.RData
+data("hammer_eset")
+e <- hammer.eset
+pData(e)$Time <- as.character(pData(e)$Time)
+pData(e)["SRX020105","Time"] <- "2 months"
+pData(e)$Time <- factor(pData(e)$Time)
+dds <- DESeqDataSetFromMatrix(exprs(e), pData(e), ~ 1)
+levels(colData(dds)$protocol) <- c("CTRL","SNL")
+levels(colData(dds)$Time) <- c("2mn","2wk")
+lab <- factor(with(colData(dds),paste(protocol,Time,sep=":")))
+
+dds <- dds[rowSums(counts(dds)) > 0,]
+dds <- estimateSizeFactors(dds)
+
+log2m <- log2(counts(dds,normalized=TRUE)+1)
+
+rld <- rlogTransformation(dds)
+rlogm <- assay(rld)
+
+
+## ----rlogHammer, dev="png", fig.align="center", fig.width=6, fig.height=6, dpi=200, fig.cap="Comparison of the log2 of normalized counts plus a pseudocount and the rlog transformation. Plots (A) and (B) show the standard deviation across samples for every gene, plotted over the average expression strength. Plots (C) and (D) show the hierarchical clustering using Euclidean distance and complete linkage."----
+library("RColorBrewer")
+line <- 0.5
+adj <- -.3
+cex <- 1.5
+plotHclustColors <- function(matrix,labels,hang=.1,...) {
+  colnames(matrix) <- labels
+  d <- dist(t(matrix))
+  hc <- hclust(d)
+  labelColors <- brewer.pal(nlevels(labels), "Paired")
+  colLab <- function(n) {
+    if (is.leaf(n)) {
+      a <- attributes(n)
+      labCol <- labelColors[which(levels(lab) == a$label)]
+      attr(n, "nodePar") <- c(a$nodePar, lab.col=labCol, pch=NA)
+    }
+    n
+  }
+  clusDendro <- dendrapply(as.dendrogram(hc,hang=hang), colLab)
+  plot(clusDendro,...)
+}
+
+par(mfrow=c(2,2),mar=c(4.5,4.5,2,2))
+meanSdPlot(log2m,main=expression(log[2]),ylim=c(0,3))
+mtext("A",side=3,line=line,adj=adj,cex=cex)
+meanSdPlot(rlogm,main="rlog",ylim=c(0,3))
+mtext("B",side=3,line=line,adj=adj,cex=cex)
+plotHclustColors(log2m, lab, main=expression(log[2]), ylab="height")
+mtext("C",side=3,line=line,adj=adj,cex=cex)
+plotHclustColors(rlogm, lab, main="rlog", ylab="height")
+mtext("D",side=3,line=line,adj=adj,cex=cex)
+
+
+## ----sessInfo, echo=FALSE, results="asis"--------------------------------
+toLatex(sessionInfo())
+
+

@@ -1,0 +1,52 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Overview}
+
+\documentclass{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{hyperref}
+
+\makeatletter
+\newcommand{\manuallabel}[2]{\def\@currentlabel{#2}\label{#1}}
+\makeatother
+\begin{document}
+
+\begin{center}
+Supplementary Information to\\
+\vspace{.5em}
+{\Large Moderated estimation of fold change and \\dispersion for RNA-Seq data with
+DESeq2}\\
+\vspace{1em}
+M.\ I.\ Love, W.\ Huber, S.\ Anders
+\end{center}
+\vspace{4ex}
+
+\noindent The R package \emph{DESeq2Paper} forms part of the Supplemental Information to
+our paper and is available from \url{http://www.huber.embl.de/DESeq2Paper}. It contains
+all R scripts used to generate the figures in the paper, the data with the simulation
+and benchmark results and the following vignettes:
+
+\newcommand\VignetteTOC[3]{%
+   \item[#1]{#2 (\texttt{#3.Rnw})}%
+   \manuallabel{v:#3}{#1}
+} 
+
+\vspace{1em}
+
+\begin{description}
+\VignetteTOC{A}{Shrinkage of dispersion estimates}{dispShrink}
+\VignetteTOC{B}{Shrinkage of logarithmic fold changes}{posterior}
+\VignetteTOC{C}{Stability of shrunken logarithmic fold changes}{stableLFC}
+\VignetteTOC{D}{Testing logarithmic fold changes at a nonzero threshold}{lfcThreshold}
+\VignetteTOC{E}{Count outlier detection using Cook's distance}{cooksDist}
+\VignetteTOC{F}{Regularized logarithm for sample clustering}{rlogHammer}
+\VignetteTOC{G}{Assessment of DESeq2 performance through simulation}{simulation}
+\VignetteTOC{H}{Specificity using Pickrell et al dataset}{specificity}
+\VignetteTOC{I}{Sensitivity and precision using the Bottomly et al.\ dataset}{sensitivityPrecision}
+\VignetteTOC{J}{Theoretical and sample variance of logarithmic dispersion estimates}{expVarLogDisp}
+\VignetteTOC{K}{Assessing dispersion estimation and shrinkage through simulation}{dispImprove}
+\VignetteTOC{L}{Estimation of mean dispersion pairs from Pickrell et al dataset}{meanDispPairs}
+\VignetteTOC{M}{Marginal independence of the test statistic of the filter statistic}{marginalIndep}
+\VignetteTOC{N}{Observed log fold changes depend on the mean for simulated counts}{largeLFCSimulation}
+\end{description}
+
+\end{document}
