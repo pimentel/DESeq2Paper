@@ -13,11 +13,20 @@ algos <- list("DESeq"=runDESeq,"DESeq2"=runDESeq2,"edgeR"=runEdgeR,"edgeR-robust
               "DSS"=runDSS,"voom"=runVoom,"SAMseq"=runSAMseq,"EBSeq"=runEBSeq)
 namesAlgos <- names(algos)
 
+# total number of genes
 n <- 10000
+
+# log fold changes used -- note these are fixed
 effSizeLevels <- log2(c(2,3,4))
+
+# total sample size
 mLevels <- c(6,8,10,20)
+
+# number of times to simulate each experiment
 nreps <- 6
 
+# for every single 'mLevels', or number of samples, simulate 'nreps' copies
+# using each effSizeLevel. in total, this is 72 simulations.
 effSizes <- rep(rep(effSizeLevels, each=nreps), times=length(mLevels))
 ms <- rep(mLevels, each=nreps * length(effSizeLevels))
 
